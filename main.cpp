@@ -426,7 +426,7 @@ int video_demo(NanoDet& detector, const char* path) {
     // create video writer
     int frame_width = cap->get(cv::CAP_PROP_FRAME_WIDTH);
     int frame_height = cap->get(cv::CAP_PROP_FRAME_HEIGHT);
-    cv::VideoWriter video("../Output/outcpp.avi", cv::VideoWriter::fourcc('M','J','P','G'), orig_fps, cv::Size(frame_width,frame_height));
+    cv::VideoWriter video("../outcpp.avi", cv::VideoWriter::fourcc('M','J','P','G'), orig_fps, cv::Size(frame_width,frame_height));
 
     auto start_full_time = std::chrono::steady_clock::now();
     double decoding_time = 0;
@@ -455,7 +455,8 @@ int video_demo(NanoDet& detector, const char* path) {
         auto end_inferencing = std::chrono::steady_clock::now();
         inferencing_time += std::chrono::duration<double, std::milli>(end_inferencing - start_inferencing).count();
 
-        //video.write(image_new);
+	std::cout << "i: " << i++ << std::endl;
+        video.write(image_new);
         //cv::waitKey(1);
     }
 

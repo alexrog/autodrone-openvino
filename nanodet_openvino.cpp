@@ -131,6 +131,7 @@ std::vector<BoxInfo> NanoDet::detect(cv::Mat image, float score_threshold, float
     }
 
     std::vector<BoxInfo> dets;
+    std::cout << "results: " << results[0].size() << std::endl;
     for (int i = 0; i < (int)results.size(); i++)
     {
         this->nms(results[i], nms_threshold);
@@ -138,10 +139,12 @@ std::vector<BoxInfo> NanoDet::detect(cv::Mat image, float score_threshold, float
         for (auto& box : results[i])
         {
             dets.push_back(box);
+	    std::cout << "added box" << std::endl;
         }
     }
     
 
+    std::cout << "size: " << (int)dets.size() << std::endl;
     //auto end = std::chrono::steady_clock::now();
     //double time = std::chrono::duration<double, std::milli>(end - start).count();
     //std::cout << "inference time:" << time << "ms" << std::endl;

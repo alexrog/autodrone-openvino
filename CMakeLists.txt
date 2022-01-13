@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.4.1)
 set(CMAKE_CXX_STANDARD 14)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 project(nanodet_demo)
 
+find_package(Threads REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(InferenceEngine REQUIRED)
 find_package(ngraph REQUIRED)
@@ -20,4 +22,5 @@ target_link_libraries(
     ${InferenceEngine_LIBRARIES}
     ${NGRAPH_LIBRARIES}
     ${OpenCV_LIBS}
+    Threads::Threads
 )
