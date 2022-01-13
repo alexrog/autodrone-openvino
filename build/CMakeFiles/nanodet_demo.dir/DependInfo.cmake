@@ -1,15 +1,21 @@
-
-# Consider dependencies only in project.
-set(CMAKE_DEPENDS_IN_PROJECT_ONLY OFF)
-
 # The set of languages for which implicit dependencies are needed:
 set(CMAKE_DEPENDS_LANGUAGES
+  "CXX"
   )
+# The set of files for implicit dependencies of each language:
+set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/px4vision/Auto-Drone/autodrone-openvino/main.cpp" "/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/nanodet_demo.dir/main.cpp.o"
+  "/home/px4vision/Auto-Drone/autodrone-openvino/nanodet_openvino.cpp" "/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/nanodet_demo.dir/nanodet_openvino.cpp.o"
+  )
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
-# The set of dependency files which are needed:
-set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "/Users/alexrogers/Documents/GitHub/nanodet/demo_openvino/main.cpp" "CMakeFiles/nanodet_demo.dir/main.cpp.o" "gcc" "CMakeFiles/nanodet_demo.dir/main.cpp.o.d"
-  "/Users/alexrogers/Documents/GitHub/nanodet/demo_openvino/nanodet_openvino.cpp" "CMakeFiles/nanodet_demo.dir/nanodet_openvino.cpp.o" "gcc" "CMakeFiles/nanodet_demo.dir/nanodet_openvino.cpp.o.d"
+# The include file search paths:
+set(CMAKE_CXX_TARGET_INCLUDE_PATH
+  "/opt/intel/openvino_2021.4.752/opencv/include"
+  "../"
+  "."
+  "/opt/intel/openvino_2021/deployment_tools/inference_engine/include"
+  "/opt/intel/openvino_2021/deployment_tools/ngraph/include"
   )
 
 # Targets to which this target links.

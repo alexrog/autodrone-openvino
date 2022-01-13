@@ -1,22 +1,35 @@
-Compiling the C compiler identification source file "CMakeCCompilerId.c" failed.
-Compiler: /Library/Developer/CommandLineTools/usr/bin/cc 
-Build flags: 
-Id flags:  
+Determining if the pthread_create exist failed with the following output:
+Change Dir: /home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/CMakeTmp
 
-The output was:
-1
-ld: library not found for -lSystem
-clang: error: linker command failed with exit code 1 (use -v to see invocation)
+Run Build Command:"/usr/bin/make" "cmTC_acd74/fast"
+/usr/bin/make -f CMakeFiles/cmTC_acd74.dir/build.make CMakeFiles/cmTC_acd74.dir/build
+make[1]: Entering directory '/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_acd74.dir/CheckSymbolExists.c.o
+/usr/bin/cc    -o CMakeFiles/cmTC_acd74.dir/CheckSymbolExists.c.o   -c /home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c
+Linking C executable cmTC_acd74
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_acd74.dir/link.txt --verbose=1
+/usr/bin/cc      CMakeFiles/cmTC_acd74.dir/CheckSymbolExists.c.o  -o cmTC_acd74 
+CMakeFiles/cmTC_acd74.dir/CheckSymbolExists.c.o: In function `main':
+CheckSymbolExists.c:(.text+0x1b): undefined reference to `pthread_create'
+collect2: error: ld returned 1 exit status
+CMakeFiles/cmTC_acd74.dir/build.make:97: recipe for target 'cmTC_acd74' failed
+make[1]: *** [cmTC_acd74] Error 1
+make[1]: Leaving directory '/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_acd74/fast' failed
+make: *** [cmTC_acd74/fast] Error 2
 
+File /home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/CMakeTmp/CheckSymbolExists.c:
+/* */
+#include <pthread.h>
 
-Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" failed.
-Compiler: /Library/Developer/CommandLineTools/usr/bin/c++ 
-Build flags: 
-Id flags:  
-
-The output was:
-1
-ld: library not found for -lc++
-clang: error: linker command failed with exit code 1 (use -v to see invocation)
-
+int main(int argc, char** argv)
+{
+  (void)argv;
+#ifndef pthread_create
+  return ((int*)(&pthread_create))[argc];
+#else
+  (void)argc;
+  return 0;
+#endif
+}
 
