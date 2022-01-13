@@ -2,6 +2,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <librealsense2/rs.hpp>
+#include "cv-helpers.hpp"
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -274,18 +276,61 @@ int image_demo(NanoDet& detector, const char* imagepath)
 
 int webcam_demo(NanoDet& detector, int cam_id)
 {
-    cv::Mat image;
-    cv::VideoCapture cap(cam_id);
+    using namespace cv;
+    using namespace rs2;
 
-    while (true)
+    // Start streaming from Intel RealSense Camera
+    pipeline pipe;
+    auto config = pipe.start();
+    auto profile = config.get_stream(RS2_STREAM_COLOR)
+                         .as<video_stream_profile>();
+    rs2::align align_to(RS2_STREAM_COLOR);
+
+    Size cropSize;
+    if (profile.width() / (float)profile.height() > WHRatio)
     {
-        cap >> image;
-        object_rect effect_roi;
-        cv::Mat resized_img;
-        resize_uniform(image, resized_img, cv::Size(320, 320), effect_roi);
-        auto results = detector.detect(resized_img, 0.4, 0.5);
+        cropSize = Size(static_cast<int>(profile.height() * WHRatio),
+                        profile.height());
+    }
+    else
+    {
+        cropSize = Size(profile.width(),
+                        static_cast<int>(profile.width() / WHRatio));
+    }
+
+    Rect crop(Point((profile.width() - cropSize.width) / 2,
+                    (profile.height() - cropSize.height) / 2),
+              cropSize);
+
+    const auto window_name = "Display Image";
+    namedWindow(window_name, WINDOW_AUTOSIZE);
+
+    while (getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
+    {
+        // Wait for the next set of frames
+        auto data = pipe.wait_for_frames();
+        // Make sure the frames are spatially aligned
+        data = align_to.process(data);
+
+        auto color_frame = data.get_color_frame();
+        auto depth_frame = data.get_depth_frame();
+
+        // If we only received new depth frame, 
+        // but the color did not update, continue
+        static int last_frame_number = 0;
+        if (color_frame.get_frame_number() == last_frame_number) continue;
+        last_frame_number = static_cast<int>(color_frame.get_frame_number());
+
+        // Convert RealSense frame to OpenCV matrix:
+        auto color_mat = frame_to_mat(color_frame);
+        auto depth_mat = depth_frame_to_meters(depth_frame);
+
+        resize_uniform(image, color_mat, cv::Size(320, 320), effect_roi);
+        auto results = detector.detect(color_mat, 0.4, 0.5);
         cv::Mat image = draw_bboxes(image, results, effect_roi);
-        cv::waitKey(1);
+
+        imshow(window_name, color_mat);
+        if (waitKey(1) >= 0) break;
     }
     return 0;
 }
@@ -455,7 +500,7 @@ int video_demo(NanoDet& detector, const char* path) {
         auto end_inferencing = std::chrono::steady_clock::now();
         inferencing_time += std::chrono::duration<double, std::milli>(end_inferencing - start_inferencing).count();
 
-	std::cout << "i: " << i++ << std::endl;
+	    std::cout << "i: " << i++ << std::endl;
         video.write(image_new);
         //cv::waitKey(1);
     }
