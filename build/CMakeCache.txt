@@ -199,6 +199,9 @@ nanodet_demo_SOURCE_DIR:STATIC=/home/px4vision/Auto-Drone/autodrone-openvino
 //The directory containing a CMake configuration file for ngraph.
 ngraph_DIR:PATH=/opt/intel/openvino_2021/deployment_tools/ngraph/cmake
 
+//The directory containing a CMake configuration file for realsense2.
+realsense2_DIR:PATH=/usr/lib/x86_64-linux-gnu/cmake/realsense2
+
 
 ########################
 # INTERNAL cache entries

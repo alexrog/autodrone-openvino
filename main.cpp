@@ -34,6 +34,7 @@ pthread_cond_t dataNotConsumed =
                     PTHREAD_COND_INITIALIZER;
 
 
+
 int resize_uniform(cv::Mat& src, cv::Mat& dst, cv::Size dst_size, object_rect& effect_area)
 {
     int w = src.cols;
@@ -279,6 +280,13 @@ int webcam_demo(NanoDet& detector, int cam_id)
     using namespace cv;
     using namespace rs2;
 
+    const size_t inWidth      = 300;
+    const size_t inHeight     = 300;
+    const float WHRatio       = inWidth / (float)inHeight;
+    const float inScaleFactor = 0.007843f;
+    const float meanVal       = 127.5;
+    //const char* classNames[]  = {"rc_car"};
+
     // Start streaming from Intel RealSense Camera
     pipeline pipe;
     auto config = pipe.start();
@@ -325,9 +333,11 @@ int webcam_demo(NanoDet& detector, int cam_id)
         auto color_mat = frame_to_mat(color_frame);
         auto depth_mat = depth_frame_to_meters(depth_frame);
 
-        resize_uniform(image, color_mat, cv::Size(320, 320), effect_roi);
-        auto results = detector.detect(color_mat, 0.4, 0.5);
-        cv::Mat image = draw_bboxes(image, results, effect_roi);
+	cv::Mat resized_img;
+	object_rect effect_roi;
+        resize_uniform(color_mat, resized_img, cv::Size(320, 320), effect_roi);
+        auto results = detector.detect(resized_img, 0.4, 0.5);
+        cv::Mat image = draw_bboxes(color_mat, results, effect_roi);
 
         imshow(window_name, color_mat);
         if (waitKey(1) >= 0) break;

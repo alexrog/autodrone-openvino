@@ -8,6 +8,7 @@ find_package(Threads REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(InferenceEngine REQUIRED)
 find_package(ngraph REQUIRED)
+find_package(realsense2 REQUIRED)
 
 include_directories(
     ${OpenCV_INCLUDE_DIRS}
@@ -22,5 +23,6 @@ target_link_libraries(
     ${InferenceEngine_LIBRARIES}
     ${NGRAPH_LIBRARIES}
     ${OpenCV_LIBS}
+    ${realsense2_LIBRARY}
     Threads::Threads
 )

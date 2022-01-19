@@ -124,6 +124,7 @@ nanodet_demo: /opt/intel/openvino_2021/opencv/lib/libopencv_photo.so.4.5.3
 nanodet_demo: /opt/intel/openvino_2021/opencv/lib/libopencv_stitching.so.4.5.3
 nanodet_demo: /opt/intel/openvino_2021/opencv/lib/libopencv_video.so.4.5.3
 nanodet_demo: /opt/intel/openvino_2021/opencv/lib/libopencv_videoio.so.4.5.3
+nanodet_demo: /usr/lib/x86_64-linux-gnu/librealsense2.so.2.50.0
 nanodet_demo: /opt/intel/openvino_2021/opencv/lib/libopencv_dnn.so.4.5.3
 nanodet_demo: /opt/intel/openvino_2021/deployment_tools/inference_engine/lib/intel64/libinference_engine.so
 nanodet_demo: /opt/intel/openvino_2021/deployment_tools/inference_engine/lib/intel64/libinference_engine_c_api.so
