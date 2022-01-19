@@ -254,6 +254,8 @@ int image_demo(NanoDet& detector, const char* imagepath)
     
     std::vector<std::string> filenames;
     cv::glob(imagepath, filenames, false);
+    int height = detector.input_size[0];
+    int width = detector.input_size[1];
 
     for (auto img_name : filenames)
     {
@@ -265,7 +267,7 @@ int image_demo(NanoDet& detector, const char* imagepath)
         }
         object_rect effect_roi;
         cv::Mat resized_img;
-        resize_uniform(image, resized_img, cv::Size(320, 320), effect_roi);
+        resize_uniform(image, resized_img, cv::Size(width, height), effect_roi);
         auto results = detector.detect(resized_img, 0.4, 0.5);
         
         image = draw_bboxes(image, results, effect_roi);
@@ -285,6 +287,8 @@ int webcam_demo(NanoDet& detector, int cam_id)
     const float WHRatio       = inWidth / (float)inHeight;
     const float inScaleFactor = 0.007843f;
     const float meanVal       = 127.5;
+    int height = detector.input_size[0];
+    int width = detector.input_size[1];
     //const char* classNames[]  = {"rc_car"};
 
     // Start streaming from Intel RealSense Camera
@@ -335,7 +339,7 @@ int webcam_demo(NanoDet& detector, int cam_id)
 
 	cv::Mat resized_img;
 	object_rect effect_roi;
-        resize_uniform(color_mat, resized_img, cv::Size(320, 320), effect_roi);
+        resize_uniform(color_mat, resized_img, cv::Size(width, height), effect_roi);
         auto results = detector.detect(resized_img, 0.4, 0.5);
         cv::Mat image = draw_bboxes(color_mat, results, effect_roi);
 
@@ -473,6 +477,8 @@ int video_demo(NanoDet& detector, const char* path) {
     cv::Mat image;
     cap = new cv::VideoCapture(path);
 
+    int height = detector.input_size[0];
+    int width = detector.input_size[1];
     // get number of frames in video
     int nFrames = cap->get(cv::CAP_PROP_FRAME_COUNT);
     int orig_fps = cap->get(cv::CAP_PROP_FPS);
@@ -497,7 +503,7 @@ int video_demo(NanoDet& detector, const char* path) {
         }
         object_rect effect_roi;
         cv::Mat resized_img;
-        resize_uniform(image, resized_img, cv::Size(320, 320), effect_roi);
+        resize_uniform(image, resized_img, cv::Size(width, height), effect_roi);
 
         auto end_decoding = std::chrono::steady_clock::now();
         decoding_time += std::chrono::duration<double, std::milli>(end_decoding - start_decoding).count();
@@ -537,7 +543,9 @@ int benchmark(NanoDet& detector)
     double time_min = DBL_MAX;
     double time_max = -DBL_MAX;
     double time_avg = 0;
-    cv::Mat image(320, 320, CV_8UC3, cv::Scalar(1, 1, 1));
+    int height = detector.input_size[0];
+    int width = detector.input_size[1];
+    cv::Mat image(width, height, CV_8UC3, cv::Scalar(1, 1, 1));
 
     for (int i = 0; i < warm_up + loop_num; i++)
     {
