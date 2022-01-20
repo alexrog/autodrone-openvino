@@ -78,7 +78,8 @@ NanoDet::NanoDet(const char* model_path)
     }
 
     //get network
-    network_ = ie.LoadNetwork(model, "CPU");
+    std::cout << "init" << std::endl;
+    network_ = ie.LoadNetwork(model, "MYRIAD");// we added to use NCS2
     infer_request_ = network_.CreateInferRequest();
 
 }
