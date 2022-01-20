@@ -11,6 +11,7 @@
 #include <thread>
 #include <pthread.h>
 #include <queue>
+#include <sstream>
 
 struct object_rect {
     int x;
@@ -24,7 +25,6 @@ std::queue<object_rect> effect_roi_queue;
 cv::VideoCapture* cap;
 bool done_decoding = false;
 bool processing_image = false;
-auto global_detector = NanoDet("nanodet.xml");
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
  
@@ -185,21 +185,7 @@ const int color_list[80][3] =
 
 cv::Mat draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, object_rect effect_roi)
 {
-    static const char* class_names[] = { "rc_car" };/*"person", "bicycle", "car", "motorcycle", "airplane", "bus",
-                                        "train", "truck", "boat", "traffic light", "fire hydrant",
-                                        "stop sign", "parking meter", "bench", "bird", "cat", "dog",
-                                        "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe",
-                                        "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee",
-                                        "skis", "snowboard", "sports ball", "kite", "baseball bat",
-                                        "baseball glove", "skateboard", "surfboard", "tennis racket",
-                                        "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl",
-                                        "banana", "apple", "sandwich", "orange", "broccoli", "carrot",
-                                        "hot dog", "pizza", "donut", "cake", "chair", "couch",
-                                        "potted plant", "bed", "dining table", "toilet", "tv", "laptop",
-                                        "mouse", "remote", "keyboard", "cell phone", "microwave", "oven",
-                                        "toaster", "sink", "refrigerator", "book", "clock", "vase",
-                                        "scissors", "teddy bear", "hair drier", "toothbrush"
-    };*/
+    static const char* class_names[] = { "rc_car", "person", "car" };
 
     cv::Mat image = bgr.clone();
     int src_w = image.cols;
@@ -209,10 +195,11 @@ cv::Mat draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, obje
     float width_ratio = (float)src_w / (float)dst_w;
     float height_ratio = (float)src_h / (float)dst_h;
 
-    //fprintf(stderr, "output size: %d\n", bboxes.size());
     for (size_t i = 0; i < bboxes.size(); i++)
     {
         const BoxInfo& bbox = bboxes[i];
+	if(bbox.label != 0)
+	    continue;
         cv::Scalar color = cv::Scalar(color_list[bbox.label][0], color_list[bbox.label][1], color_list[bbox.label][2]);
         //fprintf(stderr, "%d = %.5f at %.2f %.2f %.2f %.2f\n", bbox.label, bbox.score,
         //    bbox.x1, bbox.y1, bbox.x2, bbox.y2);
@@ -222,6 +209,7 @@ cv::Mat draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, obje
 
         char text[256];
         sprintf(text, "%s %.1f%%", class_names[bbox.label], bbox.score * 100);
+
 
         int baseLine = 0;
         cv::Size label_size = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, 0.4, 1, &baseLine);
@@ -235,6 +223,11 @@ cv::Mat draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, obje
 
         cv::rectangle(image, cv::Rect(cv::Point(x, y), cv::Size(label_size.width, label_size.height + baseLine)),
             color, -1);
+
+	cv::Rect boundingbox = cv::Rect(cv::Point(x, y), cv::Size(label_size.width, label_size.height + baseLine));
+ 
+	if(bbox.label == 0)
+	    std::cout << "[(" << boundingbox.x << "," << boundingbox.y << "),("<< boundingbox.x + boundingbox.width << "," << boundingbox.y << "),(" << boundingbox.x << "," << boundingbox.y + boundingbox.height << "),(" << boundingbox.x + boundingbox.width << "," << boundingbox.y + boundingbox.height << ")]" << std::endl;
 
         cv::putText(image, text, cv::Point(x, y + label_size.height),
             cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 255, 255));
@@ -319,6 +312,7 @@ int webcam_demo(NanoDet& detector, int cam_id)
 
     while (getWindowProperty(window_name, WND_PROP_AUTOSIZE) >= 0)
     {
+	auto start = std::chrono::steady_clock::now();
         // Wait for the next set of frames
         auto data = pipe.wait_for_frames();
         // Make sure the frames are spatially aligned
@@ -343,7 +337,15 @@ int webcam_demo(NanoDet& detector, int cam_id)
         auto results = detector.detect(resized_img, 0.4, 0.5);
         cv::Mat image = draw_bboxes(color_mat, results, effect_roi);
 
-        imshow(window_name, color_mat);
+	auto end = std::chrono::steady_clock::now();
+	double time = std::chrono::duration<double, std::milli>(end - start).count();
+	double fps = 1/ (time/1000);
+	std::stringstream stream;
+	stream << std::fixed << std::setprecision(2) << fps;
+	std::string s = stream.str();
+	fps = std::ceil(fps * 100.0) / 100.0;
+	cv::putText(image, s, cv::Point(30,100), cv::FONT_HERSHEY_SIMPLEX,2.1,cv::Scalar(0,0,255), 2, cv::LINE_AA);
+        imshow(window_name, image);
         if (waitKey(1) >= 0) break;
     }
     return 0;
@@ -406,9 +408,9 @@ void* perform_inferences(void*) {
             // cout << "B thread consumed: " << data << endl;
  
             // perform detection
-            auto results = global_detector.detect(image, 0.4, 0.5);
+            /*auto results = global_detector.detect(image, 0.4, 0.5);
             cv::Mat image_new = draw_bboxes(image, results, effect_roi); 
-            processing_image = false;
+            processing_image = false;*/
             // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
             // video.write(image_new); 
@@ -512,6 +514,7 @@ int video_demo(NanoDet& detector, const char* path) {
 
         auto results = detector.detect(resized_img, 0.4, 0.5);
         cv::Mat image_new = draw_bboxes(image, results, effect_roi);
+	std::cout << "hello" <<std::endl;
 
         auto end_inferencing = std::chrono::steady_clock::now();
         inferencing_time += std::chrono::duration<double, std::milli>(end_inferencing - start_inferencing).count();
