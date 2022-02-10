@@ -5,12 +5,6 @@
 #include <librealsense2/rs.hpp>
 #include "cv-helpers.hpp"
 #include <iostream>
-#include <thread>
-#include <vector>
-#include <chrono>
-#include <thread>
-#include <pthread.h>
-#include <queue>
 #include <sstream>
 
 struct object_rect {
@@ -19,21 +13,6 @@ struct object_rect {
     int width;
     int height;
 };
-
-std::queue<cv::Mat> image_queue;
-std::queue<object_rect> effect_roi_queue;
-cv::VideoCapture* cap;
-bool done_decoding = false;
-bool processing_image = false;
-
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
- 
-pthread_cond_t dataNotProduced =
-                    PTHREAD_COND_INITIALIZER;
-pthread_cond_t dataNotConsumed =
-                    PTHREAD_COND_INITIALIZER;
-
-
 
 int resize_uniform(cv::Mat& src, cv::Mat& dst, cv::Size dst_size, object_rect& effect_area)
 {
@@ -241,7 +220,7 @@ cv::Mat draw_bboxes(const cv::Mat& bgr, const std::vector<BoxInfo>& bboxes, obje
 }
 
 
-int image_demo(NanoDet& detector, const char* imagepath)
+int image_inference(NanoDet& detector, const char* imagepath)
 {
     // const char* imagepath = "D:/Dataset/coco/val2017/*.jpg";
     
@@ -270,19 +249,18 @@ int image_demo(NanoDet& detector, const char* imagepath)
     return 0;
 }
 
-int webcam_demo(NanoDet& detector, int cam_id)
+int intelrealsense_inference(NanoDet& detector)
 {
     using namespace cv;
     using namespace rs2;
 
-    const size_t inWidth      = 300;
-    const size_t inHeight     = 300;
+    const size_t inWidth      = 512;
+    const size_t inHeight     = 288;
     const float WHRatio       = inWidth / (float)inHeight;
     const float inScaleFactor = 0.007843f;
     const float meanVal       = 127.5;
     int height = detector.input_size[0];
     int width = detector.input_size[1];
-    //const char* classNames[]  = {"rc_car"};
 
     // Start streaming from Intel RealSense Camera
     pipeline pipe;
@@ -315,169 +293,35 @@ int webcam_demo(NanoDet& detector, int cam_id)
 	auto start = std::chrono::steady_clock::now();
         // Wait for the next set of frames
         auto data = pipe.wait_for_frames();
-        // Make sure the frames are spatially aligned
-        data = align_to.process(data);
 
         auto color_frame = data.get_color_frame();
-        auto depth_frame = data.get_depth_frame();
-
-        // If we only received new depth frame, 
-        // but the color did not update, continue
-        static int last_frame_number = 0;
-        if (color_frame.get_frame_number() == last_frame_number) continue;
-        last_frame_number = static_cast<int>(color_frame.get_frame_number());
 
         // Convert RealSense frame to OpenCV matrix:
         auto color_mat = frame_to_mat(color_frame);
-        auto depth_mat = depth_frame_to_meters(depth_frame);
 
-	cv::Mat resized_img;
-	object_rect effect_roi;
+        cv::Mat resized_img;
+        object_rect effect_roi;
         resize_uniform(color_mat, resized_img, cv::Size(width, height), effect_roi);
         auto results = detector.detect(resized_img, 0.4, 0.5);
         cv::Mat image = draw_bboxes(color_mat, results, effect_roi);
 
-	auto end = std::chrono::steady_clock::now();
-	double time = std::chrono::duration<double, std::milli>(end - start).count();
-	double fps = 1/ (time/1000);
-	std::stringstream stream;
-	stream << std::fixed << std::setprecision(2) << fps;
-	std::string s = stream.str();
-	fps = std::ceil(fps * 100.0) / 100.0;
-	cv::putText(image, s, cv::Point(30,100), cv::FONT_HERSHEY_SIMPLEX,2.1,cv::Scalar(0,0,255), 2, cv::LINE_AA);
-        imshow(window_name, image);
-        if (waitKey(1) >= 0) break;
-    }
-    return 0;
+        auto end = std::chrono::steady_clock::now();
+        double time = std::chrono::duration<double, std::milli>(end - start).count();
+        double fps = 1/ (time/1000);
+        std::stringstream stream;
+        stream << std::fixed << std::setprecision(2) << fps;
+        std::string s = stream.str();
+        fps = std::ceil(fps * 100.0) / 100.0;
+        cv::putText(image, s, cv::Point(30,100), cv::FONT_HERSHEY_SIMPLEX,2.1,cv::Scalar(0,0,255), 2, cv::LINE_AA);
+            imshow(window_name, image);
+            if (waitKey(1) >= 0) break;
+        }
+        return 0;
 }
 
-void* decode_video(void* args) {
+int video_inference(NanoDet& detector, const char* path) {
     cv::Mat image;
-    done_decoding = false;
-    while(true) {    
-        if(!done_decoding) {
-            pthread_mutex_lock(&mutex);
-            *cap >> image;
-            if(image.empty()) {
-                done_decoding = true;
-                fprintf(stderr, "Done decoding: %lu\n", image_queue.size());
-                pthread_cond_signal(&dataNotProduced);
-                pthread_mutex_unlock(&mutex);
-                break;
-            }
-            
-            object_rect effect_roi;
-            cv::Mat resized_img;
-            resize_uniform(image, resized_img, cv::Size(320, 320), effect_roi); 
-
-            effect_roi_queue.push(effect_roi);
-            image_queue.push(resized_img);
-            pthread_cond_signal(&dataNotProduced);
-
-            //if(!processing_image)
-                pthread_cond_wait(&dataNotConsumed, &mutex);
-        }
-        else {
-            std::cout << ">> Producer is in wait.." << std::endl;
-            pthread_cond_wait(&dataNotConsumed, &mutex);
-        }
-
-        pthread_mutex_unlock(&mutex);
-    }
-}
-
-void* perform_inferences(void*) {
-    int i = 0;
-    while (true) {
-        pthread_mutex_lock(&mutex);
- 
-        // Pop only when queue has at least 1 element
-        if (image_queue.size() > 0 && effect_roi_queue.size() > 0) {
-            //fprintf(stderr, "%lu\n", image_queue.size());
-            // Get the data from the front of queue
-            cv::Mat image = image_queue.front();
-            object_rect effect_roi = effect_roi_queue.front();
-
-            image_queue.pop();
-            effect_roi_queue.pop();
- 
-            pthread_cond_signal(&dataNotConsumed);
-            pthread_mutex_unlock(&mutex);
-            processing_image = true;
- 
-            // cout << "B thread consumed: " << data << endl;
- 
-            // perform detection
-            /*auto results = global_detector.detect(image, 0.4, 0.5);
-            cv::Mat image_new = draw_bboxes(image, results, effect_roi); 
-            processing_image = false;*/
-            // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-            // video.write(image_new); 
- 
-            // Pop the consumed data from queue
-        }
- 
-        // Check if consumed numbers from both threads
-        // has reached to MAX value
-        else if (done_decoding) {
-            pthread_mutex_unlock(&mutex);
-            return NULL;
-        }
- 
-        // If some other thread is executing, wait
-        else {
-            //std::cout << "B is in wait.." << std::endl;
-            pthread_cond_wait(&dataNotProduced, &mutex);
-            pthread_mutex_unlock(&mutex);
-        }
- 
-        // Get the mutex unlocked
-    }
-}
-
-int video_demo_multi(NanoDet& detector, const char* path)
-{
-    cv::Mat image;
-    cap = new cv::VideoCapture(path);
-
-    // get number of frames in video
-    int nFrames = cap->get(cv::CAP_PROP_FRAME_COUNT);
-    int orig_fps = cap->get(cv::CAP_PROP_FPS);
-    fprintf(stderr, "Num frames: %d FPS: %d\n", nFrames, orig_fps);
-    
-    // create video writer
-    int frame_width = cap->get(cv::CAP_PROP_FRAME_WIDTH);
-    int frame_height = cap->get(cv::CAP_PROP_FRAME_HEIGHT);
-    cv::VideoWriter video("../Output/outcpp.avi", cv::VideoWriter::fourcc('M','J','P','G'), orig_fps, cv::Size(frame_width,frame_height));
-    
-    pthread_t decode_thread, inference_thread;
-    int decode_producer = pthread_create(&decode_thread, NULL, decode_video, NULL);
-
-    int inference_producer = pthread_create(&inference_thread, NULL, perform_inferences, NULL);
-
-    auto start_full_time = std::chrono::steady_clock::now();
-    if (!decode_producer)
-        pthread_join(decode_thread, NULL);
-
-    if (!inference_producer)
-        pthread_join(inference_thread, NULL);
-
-    auto end = std::chrono::steady_clock::now();
-    double time = std::chrono::duration<double, std::milli>(end - start_full_time).count();
-
-    std::cout << "total time: " << time/1000 << "s" << std::endl;
-    std::cout << "total fps: " << nFrames / (time/1000) << std::endl;
-
-    cap->release();
-    video.release();
-
-    return 0;
-}
-
-int video_demo(NanoDet& detector, const char* path) {
-    cv::Mat image;
-    cap = new cv::VideoCapture(path);
+    cv::VideoCapture* cap = new cv::VideoCapture(path);
 
     int height = detector.input_size[0];
     int width = detector.input_size[1];
@@ -514,12 +358,9 @@ int video_demo(NanoDet& detector, const char* path) {
 
         auto results = detector.detect(resized_img, 0.4, 0.5);
         cv::Mat image_new = draw_bboxes(image, results, effect_roi);
-	std::cout << "hello" <<std::endl;
 
         auto end_inferencing = std::chrono::steady_clock::now();
         inferencing_time += std::chrono::duration<double, std::milli>(end_inferencing - start_inferencing).count();
-
-	    std::cout << "i: " << i++ << std::endl;
         video.write(image_new);
         //cv::waitKey(1);
     }
@@ -538,79 +379,73 @@ int video_demo(NanoDet& detector, const char* path) {
     return 0; 
 }
 
-int benchmark(NanoDet& detector)
-{
-    int loop_num = 100;
-    int warm_up = 8;
-
-    double time_min = DBL_MAX;
-    double time_max = -DBL_MAX;
-    double time_avg = 0;
-    int height = detector.input_size[0];
-    int width = detector.input_size[1];
-    cv::Mat image(width, height, CV_8UC3, cv::Scalar(1, 1, 1));
-
-    for (int i = 0; i < warm_up + loop_num; i++)
-    {
-        auto start = std::chrono::steady_clock::now();
-        std::vector<BoxInfo> results;
-        results = detector.detect(image, 0.4, 0.5);
-        auto end = std::chrono::steady_clock::now();
-        double time = std::chrono::duration<double, std::milli>(end - start).count();
-        if (i >= warm_up)
-        {
-            time_min = (std::min)(time_min, time);
-            time_max = (std::max)(time_max, time);
-            time_avg += time;
-        }
-    }
-    time_avg /= loop_num;
-    fprintf(stderr, "%20s  min = %7.2f  max = %7.2f  avg = %7.2f\n", "nanodet", time_min, time_max, time_avg);
-    return 0;
-}
-
-
 int main(int argc, char** argv)
 {
-    if (argc != 3)
-    {
-        fprintf(stderr, "usage: %s [mode] [path]. \n For webcam mode=0, path is cam id; \n For image demo, mode=1, path=xxx/xxx/*.jpg; \n For video, mode=2; \n For benchmark, mode=3 path=0.\n", argv[0]);
+    std::string mode = "live";
+    std::string device = "CPU";
+    std::string model_path = "nanodet.xml";
+    std::string img_vid_path = "";
+    int precision = 32;
+    for(int i = 1; i < argc - 1; i++) {
+        std::string curr(argv[i]);
+        std::string next(argv[i+1]);
+        if(curr == "--mode" || curr == "-m") {
+            mode = next;
+            i++;
+        }
+        else if(curr == "--device" || curr == "-d") {
+            device = next;
+            i++;
+        }
+        else if(curr == "--model_path" || curr == "-mp") {
+            model_path = next;
+            i++;
+        }
+        else if(curr == "--image_path" || curr == "-i" || curr == "--video_path" || curr == "-v") {
+            img_vid_path = next;
+            i++;
+        }
+        else if(curr == "--precision" || curr == "-p") {
+            if(next == "FP16") {
+                precision = 16;
+            }
+            else if(next == "FP32") {
+                precision = 32;
+            }
+            else {
+                fprintf(stderr, "invalid precision: must be of type 'FP16' or 'FP32'\n");
+                return -1;
+            }
+            i++;
+        }
+        else {
+            fprintf(stderr, "invalid flag: %s\n", argv[i]);
+        }
+    }
+
+    if(!(mode == "live" || mode == "video" || mode == "img")) {
+        fprintf(stderr, "invalid mode: must be of type 'live', 'video', or 'img\n");
         return -1;
     }
+
     std::cout<<"start init model"<<std::endl;
-    auto detector = NanoDet("nanodet.xml");
-    std::cout<<"success"<<std::endl;
-    int mode = atoi(argv[1]);
-    
-    switch (mode)
-    {
-    case 0:{
-        int cam_id = atoi(argv[2]);
-        webcam_demo(detector, cam_id);
-        break;
-        }
-    case 1:{
-        const char* images = argv[2];
-        image_demo(detector, images);
-        break;
-        }
-    case 2:{
-        const char* path = argv[2];
-        video_demo(detector, path);
-        break;
-        }
-    case 3:{
-        benchmark(detector);
-        break;
-        }
-    case 4:{
-        const char* path = argv[2];
-        video_demo_multi(detector, path);
-        break;
+    auto detector = NanoDet(const_cast<char*>(model_path.c_str()), const_cast<char*>(device.c_str()), precision);
+    std::cout<<"Current Params:" << std::endl;
+    std::cout << "-model_path: " << model_path << std::endl;
+    std::cout << "-mode: " << mode << std::endl;
+    std::cout << "-device: " << device << std::endl;
+    std::cout << "-precision: FP" << precision << std::endl;
+    if(mode == "img" || mode == "video") {
+        std::cout << "-" <<  mode << "_path: " << img_vid_path << std::endl;
     }
-    default:{
-        fprintf(stderr, "usage: %s [mode] [path]. \n For webcam mode=0, path is cam id; \n For image demo, mode=1, path=xxx/xxx/*.jpg; \n For video, mode=2; \n For benchmark, mode=3 path=0.\n", argv[0]);
-        break;
-        }
+
+    if(mode == "live") {
+        intelrealsense_inference(detector);
+    }
+    else if(mode == "img") {
+        image_inference(detector, const_cast<char*>(img_vid_path.c_str()));
+    }
+    else if(mode == "video") {
+        video_inference(detector, const_cast<char*>(img_vid_path.c_str()));
     }
 }

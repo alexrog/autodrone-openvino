@@ -4,8 +4,8 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/px4vision/Auto-Drone/autodrone-openvino/main.cpp" "/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/nanodet_demo.dir/main.cpp.o"
-  "/home/px4vision/Auto-Drone/autodrone-openvino/nanodet_openvino.cpp" "/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/nanodet_demo.dir/nanodet_openvino.cpp.o"
+  "/home/px4vision/autodrone_tracking/autodrone-openvino/main.cpp" "/home/px4vision/autodrone_tracking/autodrone-openvino/build/CMakeFiles/nanodet_demo.dir/main.cpp.o"
+  "/home/px4vision/autodrone_tracking/autodrone-openvino/nanodet_openvino.cpp" "/home/px4vision/autodrone_tracking/autodrone-openvino/build/CMakeFiles/nanodet_demo.dir/nanodet_openvino.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

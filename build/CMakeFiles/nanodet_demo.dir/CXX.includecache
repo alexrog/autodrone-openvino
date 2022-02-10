@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/px4vision/Auto-Drone/autodrone-openvino/cv-helpers.hpp
+/home/px4vision/autodrone_tracking/autodrone-openvino/cv-helpers.hpp
 librealsense2/rs.hpp
 -
 opencv2/opencv.hpp
@@ -14,9 +14,9 @@ opencv2/opencv.hpp
 exception
 -
 
-/home/px4vision/Auto-Drone/autodrone-openvino/main.cpp
+/home/px4vision/autodrone_tracking/autodrone-openvino/main.cpp
 nanodet_openvino.h
-/home/px4vision/Auto-Drone/autodrone-openvino/nanodet_openvino.h
+/home/px4vision/autodrone_tracking/autodrone-openvino/nanodet_openvino.h
 opencv2/core/core.hpp
 -
 opencv2/highgui/highgui.hpp
@@ -26,27 +26,17 @@ opencv2/imgproc/imgproc.hpp
 librealsense2/rs.hpp
 -
 cv-helpers.hpp
-/home/px4vision/Auto-Drone/autodrone-openvino/cv-helpers.hpp
+/home/px4vision/autodrone_tracking/autodrone-openvino/cv-helpers.hpp
 iostream
 -
-thread
--
-vector
--
-chrono
--
-thread
--
-pthread.h
--
-queue
+sstream
 -
 
-/home/px4vision/Auto-Drone/autodrone-openvino/nanodet_openvino.cpp
+/home/px4vision/autodrone_tracking/autodrone-openvino/nanodet_openvino.cpp
 nanodet_openvino.h
-/home/px4vision/Auto-Drone/autodrone-openvino/nanodet_openvino.h
+/home/px4vision/autodrone_tracking/autodrone-openvino/nanodet_openvino.h
 
-/home/px4vision/Auto-Drone/autodrone-openvino/nanodet_openvino.h
+/home/px4vision/autodrone_tracking/autodrone-openvino/nanodet_openvino.h
 string
 -
 opencv2/core.hpp

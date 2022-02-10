@@ -6,5 +6,5 @@ CXX_FLAGS =   -Wno-error=deprecated-declarations -pthread -std=gnu++14
 
 CXX_DEFINES = 
 
-CXX_INCLUDES = -isystem /opt/intel/openvino_2021.4.752/opencv/include -I/home/px4vision/Auto-Drone/autodrone-openvino -I/home/px4vision/Auto-Drone/autodrone-openvino/build -isystem /opt/intel/openvino_2021/deployment_tools/inference_engine/include -isystem /opt/intel/openvino_2021/deployment_tools/ngraph/include 
+CXX_INCLUDES = -isystem /opt/intel/openvino_2021.4.752/opencv/include -I/home/px4vision/autodrone_tracking/autodrone-openvino -I/home/px4vision/autodrone_tracking/autodrone-openvino/build -isystem /opt/intel/openvino_2021/deployment_tools/inference_engine/include -isystem /opt/intel/openvino_2021/deployment_tools/ngraph/include 
 

@@ -1,3 +1,3 @@
-/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/rebuild_cache.dir
-/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/nanodet_demo.dir
-/home/px4vision/Auto-Drone/autodrone-openvino/build/CMakeFiles/edit_cache.dir
+/home/px4vision/autodrone_tracking/autodrone-openvino/build/CMakeFiles/rebuild_cache.dir
+/home/px4vision/autodrone_tracking/autodrone-openvino/build/CMakeFiles/nanodet_demo.dir
+/home/px4vision/autodrone_tracking/autodrone-openvino/build/CMakeFiles/edit_cache.dir

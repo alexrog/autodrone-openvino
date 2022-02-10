@@ -56,7 +56,7 @@ static void generate_grid_center_priors(const int input_height, const int input_
     }
 }
 
-NanoDet::NanoDet(const char* model_path)
+NanoDet::NanoDet(const char* model_path, const char* device, const int precision)
 {
     InferenceEngine::Core ie;
     InferenceEngine::CNNNetwork model = ie.ReadNetwork(model_path);
@@ -64,6 +64,12 @@ NanoDet::NanoDet(const char* model_path)
     InferenceEngine::InputsDataMap inputs_map(model.getInputsInfo());
     input_name_ = inputs_map.begin()->first;
     InferenceEngine::InputInfo::Ptr input_info = inputs_map.begin()->second;
+    if(precision == 32) {
+        input_info->setPrecision(InferenceEngine::Precision::FP32);    
+    }
+    else if(precision == 16) {
+        input_info->setPrecision(InferenceEngine::Precision::FP16);
+    }
     //input_info->setPrecision(InferenceEngine::Precision::FP32);
     //input_info->setLayout(InferenceEngine::Layout::NCHW);
 
@@ -74,12 +80,18 @@ NanoDet::NanoDet(const char* model_path)
     for (auto &output_info : outputs_map)
     {
         //std::cout<< "Output:" << output_info.first <<std::endl;
-        output_info.second->setPrecision(InferenceEngine::Precision::FP32);
+        if(precision == 32) {
+            output_info.second->setPrecision(InferenceEngine::Precision::FP32);    
+        }
+        else if(precision == 16) {
+            output_info.second->setPrecision(InferenceEngine::Precision::FP16);
+        }
+        // output_info.second->setPrecision(InferenceEngine::Precision::FP32);
     }
 
     //get network
     std::cout << "init" << std::endl;
-    network_ = ie.LoadNetwork(model, "MYRIAD");// we added to use NCS2
+    network_ = ie.LoadNetwork(model, device);// we added to use NCS2
     infer_request_ = network_.CreateInferRequest();
 
 }
